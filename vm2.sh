@@ -6,14 +6,14 @@ cd $dir
 . "$dir/vm2.config"
 
 #network
-
+modprobe 8021q
 ifdown $INTERNAL_IF
 route add -net $INT_IP gw $GW_IP
 ifconfig $INTERNAL_IF $INT_IP up
 vconfig add $INTERNAL_IF $VLAN
 ifconfig $INTERNAL_IF.$VLAN $APACHE_VLAN_IP up
 
-echo 1 > /proc/sys/net/ipv4/ip_forward
+#echo 1 > /proc/sys/net/ipv4/ip_forward
 
 #apache
 
