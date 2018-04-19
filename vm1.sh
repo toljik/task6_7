@@ -44,26 +44,13 @@ openssl req -new\
        -subj "/C=UA/ST=Kharkiv/L=Kharkiv/O=Mirantis/OU=NURE/CN=$(hostname)/"
 
 
-if [ $EXT_IP = DHCP ]; then
-openssl x509 -req\
-       -extfile <(cat /etc/ssl/openssl.cnf \
-        <(printf "subjectAltName=IP:$EXTERNAL_IP")\
-       -in /etc/ssl/certs/web.csr\
-       -CA /etc/ssl/certs/root-ca.crt\
-       -CAkey /etc/ssl/certs/root-ca.key\
-       -CAcreateserial\
-       -out /etc/ssl/certs/web.crt
-else
- openssl x509 -req\
-       -extfile <(cat /etc/ssl/openssl.cnf \
-        <printf "subjectAltName=IP:$EXT_IP")\
-       -in /etc/ssl/certs/web.csr\
-       -CA /etc/ssl/certs/root-ca.crt\
-       -CAkey /etc/ssl/certs/root-ca.key\
-       -CAcreateserial\
-       -out /etc/ssl/certs/web.crt
 
-fi
+openssl x509 -req\
+       -in /etc/ssl/certs/web.csr\
+       -CA /etc/ssl/certs/root-ca.crt\
+       -CAkey /etc/ssl/certs/root-ca.key\
+       -CAcreateserial\
+       -out /etc/ssl/certs/web.crt
 
 cat /etc/ssl/certs/root-ca.crt /etc/ssl/certs/web.crt > /etc/ssl/certs/web-ca.pem
 
