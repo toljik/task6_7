@@ -1,3 +1,6 @@
+openssl req -x509 -new -nodes -key /etc/ssl/certs/root-ca.key -sha256 -days 365\
+                                   -out /etc/ssl/certs/root-ca.crt\
+                                   –subj "/C=UA/ST=Kharkiv/L=Kharkiv/O=NURE/OU=Mirantis/CN=vm1/"
 #!/bin/bash
 
 dir=`dirname $0`
@@ -29,17 +32,38 @@ ifconfig $INTERNAL_IF.$VLAN $VLAN_IP up
 
 #nginx
 
-apt-get update
-apt-get install nginx -y
+apt-get update > /dev/null
+apt-get install nginx -y > /dev/null
 
 #certs
-openssl req -x509 -nodes -days 365 -newkey rsa:2048 -keyout /etc/ssl/certs/root-ca.key -out /etc/ssl/certs/root-ca.crt –subj "/C=UA/ST=Kharkiv/L=Kharkiv/O=NURE/OU=Mirantis/CN=$(hostname)"
-openssl req -newkey -keyout /etc/ssl/certs/web.key –out /etc/ssl/certs/web.csr –subj "/C=UA/ST=Kharkiv/L=Kharkiv/O=NURE/OU=Mirantis/CN=$(hostname)"
+openssl genrsa -out /etc/ssl/certs/root-ca.key 2048
+openssl req -x509 -new -nodes -key /etc/ssl/certs/root-ca.key -sha256 -days 365\
+       -out /etc/ssl/certs/root-ca.crt\
+       -subj "/C=UA/ST=Kharkiv/L=Kharkiv/O=Mirantis/OU=NURE/CN=$(hostname)/"
+openssl genrsa -out /etc/ssl/certs/web.key 2048
+openssl req -new\
+       -out /etc/ssl/certs/web.csr\
+       -key /etc/ssl/certs/web.key\
+       -subj "/C=UA/ST=Kharkiv/L=Kharkiv/O=Mirantis/OU=NURE/CN=$(hostname)/"
+
 
 if [ $EXT_IP = DHCP ]; then
- open ssl –req -x509 -extfile <(printf "subjectAltName=IP:$EXTERNAL_IP") -days 365 in /etc/ssl/certs/web.csr -CA /etc/ssl/certs/root-ca.crt -CAkey /etc/ssl/certs/root-ca.key -CAcreateserial -out  /etc/ssl/certs/web.crt
+openssl x509 -req\
+       -extfile <(printf "subjectAltName=IP:$EXTERNAL_IP")\
+       -in /etc/ssl/certs/web.csr\
+       -CA /etc/ssl/certs/root-ca.crt\
+       -CAkey /etc/ssl/certs/root-ca.key\
+       -CAcreateserial\
+       -out /etc/ssl/certs/web.crt
 else
- open ssl –req -x509 -extfile <(printf "subjectAltName=IP:$EXT_IP") -days 365 in /etc/ssl/certs/web.csr -CA /etc/ssl/certs/root-ca.crt -CAkey /etc/ssl/certs/root-ca.key -CAcreateserial -out /etc/ssl/certs/web.crt
+ openssl x509 -req\
+       -extfile <(printf "subjectAltName=IP:$EXT_IP")\
+       -in /etc/ssl/certs/web.csr\
+       -CA /etc/ssl/certs/root-ca.crt\
+       -CAkey /etc/ssl/certs/root-ca.key\
+       -CAcreateserial\
+       -out /etc/ssl/certs/web.crt
+
 fi
 
 cat /etc/ssl/certs/root-ca.crt /etc/ssl/certs/web.crt > /etc/ssl/certs/web-ca.pem
