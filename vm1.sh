@@ -1,6 +1,3 @@
-openssl req -x509 -new -nodes -key /etc/ssl/certs/root-ca.key -sha256 -days 365\
-                                   -out /etc/ssl/certs/root-ca.crt\
-                                   –subj "/C=UA/ST=Kharkiv/L=Kharkiv/O=NURE/OU=Mirantis/CN=vm1/"
 #!/bin/bash
 
 dir=`dirname $0`
@@ -49,7 +46,8 @@ openssl req -new\
 
 if [ $EXT_IP = DHCP ]; then
 openssl x509 -req\
-       -extfile <(printf "subjectAltName=IP:$EXTERNAL_IP")\
+       -extfile <(cat /etc/ssl/openssl.cnf \
+        <(printf "subjectAltName=IP:$EXTERNAL_IP")\
        -in /etc/ssl/certs/web.csr\
        -CA /etc/ssl/certs/root-ca.crt\
        -CAkey /etc/ssl/certs/root-ca.key\
@@ -57,7 +55,8 @@ openssl x509 -req\
        -out /etc/ssl/certs/web.crt
 else
  openssl x509 -req\
-       -extfile <(printf "subjectAltName=IP:$EXT_IP")\
+       -extfile <(cat /etc/ssl/openssl.cnf \
+        <printf "subjectAltName=IP:$EXT_IP")\
        -in /etc/ssl/certs/web.csr\
        -CA /etc/ssl/certs/root-ca.crt\
        -CAkey /etc/ssl/certs/root-ca.key\
@@ -73,19 +72,15 @@ cat /etc/ssl/certs/root-ca.crt /etc/ssl/certs/web.crt > /etc/ssl/certs/web-ca.pe
 rm -f /etc/nginx/site-available/*
 rm -f /etc/nginx/site-enabled/*
 
-
-echo "server {
-    listen $NGINX_PORT;
-    server_name $(hostname);
-
-    ssl on; 
-    ssl_certificate /etc/ssl/certs/web-ca.crt; 
-    ssl_certificate_key /etc/ssl/certs/web.key;
-
-
-location / {
-proxy_pass http://$APACHE_VLAN_IP
-}
+echo "server {\
+    listen $NGINX_PORT;\
+    server_name $(hostname);\
+    ssl on; \
+    ssl_certificate /etc/ssl/certs/web-ca.crt; \
+    ssl_certificate_key /etc/ssl/certs/web.key;\
+location / {\
+proxy_pass http://$APACHE_VLAN_IP\
+}\
 }" > /etc/nginx/site-available/$(hostname)
 
 
